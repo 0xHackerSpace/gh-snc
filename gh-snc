@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# gh-snc: entrypoint for the "gh snc" extension.
+# Dispatches to lib/commands/<subcommand>.sh, keeping this file as a thin router.
+set -euo pipefail
+
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib"
+
+usage() {
+  cat <<'EOF'
+Usage: gh snc <command> [args]
+
+Commands:
+  hello       Print a greeting (sample command)
+  help        Show this message
+
+Run "gh snc help" for details.
+EOF
+}
+
+main() {
+  local cmd="${1:-help}"
+  shift || true
+
+  case "$cmd" in
+    -h|--help|help)
+      usage
+      ;;
+    *)
+      local cmd_file="${LIB_DIR}/commands/${cmd}.sh"
+      if [[ -f "$cmd_file" ]]; then
+        # shellcheck source=/dev/null
+        source "$cmd_file"
+        "cmd_${cmd}" "$@"
+      else
+        echo "gh-snc: unknown command '${cmd}'" >&2
+        usage >&2
+        exit 1
+      fi
+      ;;
+  esac
+}
+
+main "$@"
